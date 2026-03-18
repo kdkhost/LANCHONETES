@@ -1,0 +1,9 @@
+.env
+app.zip
+/storage/logs/*.log
+/vendor
+node_modules
+/.idea
+/.vscode
+*.log
+*.cache
