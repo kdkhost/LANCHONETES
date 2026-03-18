@@ -58,17 +58,28 @@ class HomeController extends Controller
                       ->orWhere('ingredientes', 'like', "%{$q}%");
             })
             ->with('categoria')
-            ->take(30)->get();
+            ->orderBy('ordem')
+            ->paginate(12)
+            ->appends(['q' => $q]);
 
         if ($request->expectsJson()) {
-            return response()->json(['produtos' => $produtos->map(fn($p) => [
+            $items = $produtos->getCollection()->map(fn($p) => [
                 'id'          => $p->id,
                 'nome'        => $p->nome,
                 'descricao'   => $p->descricao,
                 'preco'       => $p->preco_atual,
                 'imagem_url'  => $p->imagem_url,
                 'categoria'   => $p->categoria?->nome,
-            ])]);
+            ]);
+
+            return response()->json([
+                'produtos' => $items,
+                'meta' => [
+                    'pagina_atual' => $produtos->currentPage(),
+                    'ultima_pagina'=> $produtos->lastPage(),
+                    'total'        => $produtos->total(),
+                ],
+            ]);
         }
 
         return view('cliente.busca', compact('produtos', 'q', 'loja'));
