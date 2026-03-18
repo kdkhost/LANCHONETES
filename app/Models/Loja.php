@@ -259,14 +259,25 @@ class Loja extends Model
         if (!$chave || !isset($horarios[$chave])) return true;
 
         $h = $horarios[$chave];
-        if (!is_array($h)) {
+
+        if (is_string($h)) {
+            $decoded = json_decode($h, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $h = $decoded;
+            }
+        }
+
+        if (!is_array($h) && !is_object($h)) {
             return (bool) $this->ativo;
         }
 
-        if (empty($h['ativo'])) return false;
+        $ativoDia = data_get($h, 'ativo', true);
+        if (!$ativoDia) {
+            return false;
+        }
 
-        $abertura  = $h['abertura'] ?? null;
-        $fechamento = $h['fechamento'] ?? null;
+        $abertura   = data_get($h, 'abertura');
+        $fechamento = data_get($h, 'fechamento');
 
         if (!$abertura || !$fechamento) {
             return (bool) $this->ativo;
