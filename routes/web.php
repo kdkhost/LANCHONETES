@@ -229,12 +229,13 @@ Route::get('/politica-privacidade',[LgpdController::class, 'politica'])->name('l
 Route::post('/lgpd/aceitar',       [LgpdController::class, 'aceitar'])->name('lgpd.aceitar');
 
 // ─── Landing institucional / página comercial ─────────────────────────────────
-Route::get('/apresentacao', [MarketingController::class, 'landing'])->name('marketing.landing');
+Route::get('/', [MarketingController::class, 'landing'])->name('marketing.landing');
+Route::get('/apresentacao', [MarketingController::class, 'landing']);
 Route::post('/apresentacao/contato', [MarketingController::class, 'contato'])->name('marketing.contato');
-Route::redirect('/vendas', '/apresentacao');
+Route::redirect('/vendas', '/');
 
 // ─── Loja pública (homepage cliente) ─────────────────────────────────────────
-Route::get('/',                         [HomeController::class, 'index'])->name('cliente.home');
+Route::get('/app',                      [HomeController::class, 'index'])->name('cliente.home');
 Route::get('/lojas',                    [HomeController::class, 'listaLojas'])->name('cliente.lojas');
 Route::get('/buscar',                   [HomeController::class, 'buscar'])->name('cliente.buscar');
 Route::get('/{lojaSlug}',               [HomeController::class, 'index'])->name('cliente.loja');
