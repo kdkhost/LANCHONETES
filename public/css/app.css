@@ -440,6 +440,10 @@ body {
         margin-bottom: 28px;
         border: 1px solid rgba(0,0,0,.02);
     }
+    .busca-rapida { grid-column: 1 / -1; width: min(830px, 80vw); margin: 0 auto 20px; }
+    .secao-destaques { grid-column: 1 / -1; width: min(1260px, 92vw); margin: 0 auto 32px; }
+    .produtos-scroll { overflow: visible; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; padding: 0; }
+    .produto-card-mini { min-width: unset; }
     .produtos-lista {
         display: flex;
         flex-direction: column;
@@ -473,6 +477,24 @@ body {
         right: 14px;
     }
     .produto-add-btn i { font-size: 1rem; }
+    .modal-bottom,
+    .carrinho-panel {
+        max-width: 520px;
+        margin: 0 auto;
+        border-radius: 32px;
+        left: 50%;
+        right: auto;
+        transform: translate(-50%, 20px);
+        top: 140px;
+        bottom: auto;
+        max-height: 80vh;
+        box-shadow: 0 40px 80px rgba(15,23,42,.25);
+    }
+    .modal-bottom.ativo,
+    .carrinho-panel.ativo { transform: translate(-50%, 0); }
+    .modal-bottom-handle { display: none; }
+    .modal-overlay,
+    .carrinho-overlay { backdrop-filter: blur(6px); }
 }
 
 /* ── ALERTAS ── */
@@ -1201,7 +1223,7 @@ body {
     .produto-card-img img { width: 80px; height: 80px; }
     .campo-row { grid-template-columns: 1fr; }
 }
-@media (min-width: 768px) {
+@media (min-width: 768px) and (max-width: 1199px) {
     .pwa-body { max-width: 480px; margin: 0 auto; }
     .pwa-header, .footer-nav, .carrinho-panel, .modal-pix, .modal-bottom, .sidebar { max-width: 480px; left: 50%; transform: translateX(-50%); }
     .sidebar-left.ativo { transform: translateX(calc(-50% + 0px)); }
