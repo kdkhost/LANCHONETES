@@ -143,6 +143,22 @@
             <textarea name="observacoes" class="campo-input" rows="3" placeholder="Alguma observação? Ex: sem cebola, capricha no molho..."></textarea>
         </div>
 
+        {{-- Gorjeta para o entregador --}}
+        <div class="checkout-section">
+            <h3 class="checkout-section-title"><i class="bi bi-emoji-smile"></i> Agrade o entregador</h3>
+            <p class="text-muted" style="margin: 0 0 10px; font-size: .9rem;">100% do valor vai direto para quem leva seu pedido. Escolha um valor sugerido ou personalize.</p>
+            <div class="gorjeta-opcoes">
+                @foreach([2,5,8,10] as $valor)
+                    <button type="button" class="gorjeta-opcao" data-valor="{{ $valor }}">R$ {{ number_format($valor, 2, ',', '.') }}</button>
+                @endforeach
+                <button type="button" class="gorjeta-opcao" data-valor="0">Sem gorjeta</button>
+            </div>
+            <div class="gorjeta-input">
+                <span>R$</span>
+                <input type="number" step="0.50" min="0" max="500" id="inputGorjeta" placeholder="0,00">
+            </div>
+        </div>
+
         {{-- Pagamento --}}
         <div class="checkout-section">
             <h3 class="checkout-section-title"><i class="bi bi-credit-card"></i> Forma de Pagamento</h3>
@@ -209,6 +225,7 @@
         <div class="checkout-resumo">
             <div class="resumo-linha"><span>Subtotal</span><span id="resumoSubtotal">R$ 0,00</span></div>
             <div class="resumo-linha" id="resumoFreteRow" style="display:none"><span>Entrega</span><span id="resumoFrete">R$ 0,00</span></div>
+            <div class="resumo-linha" id="resumoGorjetaRow" style="display:none"><span>Gorjeta</span><span id="resumoGorjeta">R$ 0,00</span></div>
             <div class="resumo-linha text-success" id="resumoDescontoRow" style="display:none"><span>Desconto</span><span id="resumoDesconto">-R$ 0,00</span></div>
             <div class="resumo-linha resumo-total"><span>Total</span><span id="resumoTotal">R$ 0,00</span></div>
         </div>
@@ -250,6 +267,7 @@ let mpInstance = null;
 let cardTokenForm = null;
 let taxaEntregaAtual = 0;
 let descontoAtual = 0;
+let gorjetaAtual = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
     renderizarItensCheckout();
@@ -312,6 +330,16 @@ function inicializarEventos() {
         if (e.key === 'Enter') { e.preventDefault(); aplicarCupom(); }
     });
 
+    document.querySelectorAll('.gorjeta-opcao').forEach(btn => btn.addEventListener('click', () => {
+        const valor = parseFloat(btn.dataset.valor || '0');
+        setarGorjeta(valor);
+        document.getElementById('inputGorjeta').value = valor > 0 ? valor.toFixed(2) : '';
+    }));
+    document.getElementById('inputGorjeta').addEventListener('input', e => {
+        const valor = parseFloat((e.target.value || '0').replace(',', '.')) || 0;
+        setarGorjeta(valor);
+    });
+
     // Submit
     document.getElementById('formCheckout').addEventListener('submit', finalizarPedido);
 
@@ -346,13 +374,15 @@ function atualizarResumo() {
     const subtotal  = carrinho.reduce((s, i) => s + (i.preco_total * i.quantidade), 0);
     const frete     = taxaEntregaAtual;
     const desconto  = descontoAtual;
-    const total     = subtotal + frete - desconto;
+    const total     = subtotal + frete + gorjetaAtual - desconto;
 
     document.getElementById('resumoSubtotal').textContent = 'R$ ' + subtotal.toFixed(2).replace('.', ',');
     document.getElementById('resumoFrete').textContent    = frete > 0 ? 'R$ ' + frete.toFixed(2).replace('.', ',') : 'Grátis';
+    document.getElementById('resumoGorjeta').textContent  = gorjetaAtual > 0 ? 'R$ ' + gorjetaAtual.toFixed(2).replace('.', ',') : 'R$ 0,00';
     document.getElementById('resumoDesconto').textContent = '-R$ ' + desconto.toFixed(2).replace('.', ',');
     document.getElementById('resumoTotal').textContent    = 'R$ ' + total.toFixed(2).replace('.', ',');
     document.getElementById('resumoFreteRow').style.display   = frete > 0 ? '' : 'none';
+    document.getElementById('resumoGorjetaRow').style.display = gorjetaAtual > 0 ? '' : 'none';
     document.getElementById('resumoDescontoRow').style.display = desconto > 0 ? '' : 'none';
     document.getElementById('checkoutSubtotal').textContent   = carrinho.length + ' item(ns)';
 
@@ -475,7 +505,7 @@ function inicializarMercadoPago() {
 function obterTotalAtual() {
     const carrinho = Carrinho.obter();
     const subtotal = carrinho.reduce((s, i) => s + (i.preco_total * i.quantidade), 0);
-    return subtotal + taxaEntregaAtual - descontoAtual;
+    return subtotal + taxaEntregaAtual + gorjetaAtual - descontoAtual;
 }
 
 async function finalizarPedido(e) {
@@ -496,6 +526,7 @@ async function finalizarPedido(e) {
         tipo_entrega: tipo,
         metodo_pagamento: metodo,
         observacoes: document.querySelector('textarea[name=observacoes]')?.value || '',
+        gorjeta: gorjetaAtual,
         cupom_codigo: document.getElementById('inputCupom').value.trim().toUpperCase() || null,
     };
 

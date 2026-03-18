@@ -13,6 +13,8 @@ class DatabaseSeeder extends Seeder
             UsuarioSeeder::class,
             CategoriaSeeder::class,
             ProdutoSeeder::class,
+            PedidoSeeder::class,
+            AvaliacaoSeeder::class,
         ]);
     }
 }

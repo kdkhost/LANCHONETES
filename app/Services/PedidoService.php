@@ -73,6 +73,7 @@ class PedidoService
 
             $tipoEntrega = $dados['tipo_entrega'] ?? 'entrega';
             $taxaEntrega = 0;
+            $gorjeta      = isset($dados['gorjeta']) ? max(0, min((float) $dados['gorjeta'], 500)) : 0;
             $enderecoId  = null;
             $calcTaxa    = [];
 
@@ -100,7 +101,7 @@ class PedidoService
                 }
             }
 
-            $total = $subtotal + $taxaEntrega - $desconto;
+            $total = $subtotal + $taxaEntrega + $gorjeta - $desconto;
 
             $pedido = Pedido::create([
                 'loja_id'             => $loja->id,
@@ -113,12 +114,13 @@ class PedidoService
                 'endereco_complemento'=> $dados['endereco']['complemento'] ?? null,
                 'endereco_bairro'     => $dados['endereco']['bairro'] ?? null,
                 'endereco_cidade'     => $dados['endereco']['cidade'] ?? null,
-                'endereco_estado'     => $dados['endereco']['estado'] ?? null,
-                'endereco_latitude'   => $dados['endereco']['latitude'] ?? null,
-                'endereco_longitude'  => $dados['endereco']['longitude'] ?? null,
+                'endereco_estado'       => $dados['endereco']['estado'] ?? null,
+                'endereco_latitude'     => $dados['endereco']['latitude'] ?? null,
+                'endereco_longitude'    => $dados['endereco']['longitude'] ?? null,
                 'subtotal'            => $subtotal,
                 'taxa_entrega'        => $taxaEntrega,
                 'desconto'            => $desconto,
+                'gorjeta_entregador'  => $gorjeta,
                 'total'               => $total,
                 'observacoes'         => $dados['observacoes'] ?? null,
                 'cupom_codigo'        => $cupom?->codigo,

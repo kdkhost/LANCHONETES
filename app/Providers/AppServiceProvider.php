@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Usuario;
+use App\Models\Loja;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
@@ -68,24 +69,48 @@ class AppServiceProvider extends ServiceProvider
 
         // Compartilhar variáveis globais com todas as views
         View::composer('*', function ($view) {
+            $lojaAtual = null;
+
+            if (app()->bound('loja_atual')) {
+                $lojaAtual = app('loja_atual');
+            }
+
             if (Auth::check()) {
                 $usuario = Auth::user();
                 $view->with('usuarioLogado', $usuario);
                 $view->with('notificacoesNaoLidas', $usuario->notificacoesNaoLidas()->count());
 
-                // lojaAtual para o painel admin
-                if ($usuario->loja_id && !isset($view->getData()['lojaAtual'])) {
+                if ($usuario->loja_id && !$lojaAtual) {
                     $lojaAtual = cache()->remember(
                         'loja_' . $usuario->loja_id,
                         60,
-                        fn() => \App\Models\Loja::find($usuario->loja_id)
+                        fn() => Loja::find($usuario->loja_id)
                     );
-                    $view->with('lojaAtual', $lojaAtual);
+                }
+            }
 
-                    // Registrar no container para controllers (LgpdController etc.)
-                    if (!app()->bound('loja_atual')) {
-                        app()->instance('loja_atual', $lojaAtual);
-                    }
+            if (!$lojaAtual) {
+                $route = request()->route();
+                $slug = $route?->parameter('loja')
+                    ?? $route?->parameter('lojaSlug')
+                    ?? $route?->parameter('slug');
+
+                if ($slug) {
+                    $lojaAtual = Loja::where('slug', $slug)
+                        ->where('ativo', true)
+                        ->first();
+                }
+            }
+
+            if (!$lojaAtual) {
+                $lojaAtual = cache()->remember('loja_padrao_ativa', 60, fn() => Loja::where('ativo', true)->orderBy('ordem')->first());
+            }
+
+            if ($lojaAtual) {
+                $view->with('lojaAtual', $lojaAtual);
+
+                if (!app()->bound('loja_atual')) {
+                    app()->instance('loja_atual', $lojaAtual);
                 }
             }
         });

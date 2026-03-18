@@ -5,8 +5,6 @@ namespace Database\Seeders;
 use App\Models\Produto;
 use App\Models\Categoria;
 use App\Models\Loja;
-use App\Models\GrupoAdicional;
-use App\Models\Adicional;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -14,138 +12,274 @@ class ProdutoSeeder extends Seeder
 {
     public function run(): void
     {
-        $loja   = Loja::first();
-        if (!$loja) return;
+        $lojas = Loja::with('categorias')->get();
+        if ($lojas->isEmpty()) {
+            return;
+        }
 
-        $catLanches    = Categoria::where('loja_id', $loja->id)->where('nome', 'Lanches')->first();
-        $catBebidas    = Categoria::where('loja_id', $loja->id)->where('nome', 'Bebidas')->first();
-        $catPorcoes    = Categoria::where('loja_id', $loja->id)->where('nome', 'Porções')->first();
-        $catSobremesas = Categoria::where('loja_id', $loja->id)->where('nome', 'Sobremesas')->first();
-        $catCombos     = Categoria::where('loja_id', $loja->id)->where('nome', 'Combos')->first();
+        foreach ($lojas as $loja) {
+            $perfil = $this->identificarPerfil($loja->slug);
+            $categorias = $loja->categorias->keyBy('nome');
+            $produtos = $this->catalogoPorPerfil($perfil);
 
-        $lanches = [
-            ['nome' => 'X-Burguer',     'descricao' => 'Pão, hambúrguer artesanal 150g, queijo, alface, tomate, maionese caseira.',    'preco' => 22.90, 'destaque' => true,  'novo' => false, 'ordem' => 1],
-            ['nome' => 'X-Bacon',       'descricao' => 'Pão, hambúrguer 150g, bacon crocante, queijo cheddar, cebola crispy.',          'preco' => 26.90, 'destaque' => true,  'novo' => false, 'ordem' => 2],
-            ['nome' => 'X-Frango',      'descricao' => 'Pão, filé de frango grelhado, queijo prato, alface americana, tomate.',         'preco' => 24.90, 'destaque' => false, 'novo' => false, 'ordem' => 3],
-            ['nome' => 'X-Tudo',        'descricao' => 'Pão, hambúrguer duplo, bacon, queijo, alface, tomate, ovo, milho, batata palha.','preco' => 32.90, 'destaque' => true,  'novo' => true,  'ordem' => 4],
-            ['nome' => 'X-Veggie',      'descricao' => 'Pão integral, hambúrguer de grão-de-bico, queijo, rúcula, tomate seco.',         'preco' => 24.90, 'destaque' => false, 'novo' => true,  'ordem' => 5],
-        ];
+            foreach ($produtos as $dados) {
+                $categoria = $categorias->get($dados['categoria']);
+                if (!$categoria) {
+                    continue;
+                }
 
-        foreach ($lanches as $l) {
-            $produto = Produto::create([
-                'loja_id'      => $loja->id,
-                'categoria_id' => $catLanches?->id,
-                'nome'         => $l['nome'],
-                'slug'         => Str::slug($l['nome']),
-                'descricao'    => $l['descricao'],
-                'preco'        => $l['preco'],
-                'destaque'     => $l['destaque'],
-                'novo'         => $l['novo'],
-                'ordem'        => $l['ordem'],
-                'ativo'        => true,
-                'disponivel'   => true,
-                'tempo_preparo_min' => 15,
-            ]);
-
-            // Grupo: Ponto do hambúrguer
-            if (in_array($l['nome'], ['X-Burguer', 'X-Bacon', 'X-Tudo'])) {
-                $grupoPonto = $produto->gruposAdicionais()->create([
-                    'nome'        => 'Ponto do Hambúrguer',
-                    'obrigatorio' => true,
-                    'min_selecao' => 1,
-                    'max_selecao' => 1,
-                    'ordem'       => 1,
+                $produto = Produto::create([
+                    'loja_id'           => $loja->id,
+                    'categoria_id'      => $categoria->id,
+                    'nome'              => $dados['nome'],
+                    'slug'              => Str::slug($loja->slug . '-' . $dados['nome']),
+                    'descricao'         => $dados['descricao'],
+                    'preco'             => $dados['preco'],
+                    'preco_promocional' => $dados['promocional'] ?? null,
+                    'destaque'          => $dados['destaque'] ?? false,
+                    'novo'              => $dados['novo'] ?? false,
+                    'ordem'             => $dados['ordem'] ?? 0,
+                    'imagem_principal'  => $dados['imagem'] ?? null,
+                    'ativo'             => true,
+                    'disponivel'        => true,
+                    'tempo_preparo_min' => $dados['tempo'] ?? 18,
                 ]);
-                foreach (['Mal passado', 'Ao ponto', 'Bem passado'] as $i => $ponto) {
-                    $grupoPonto->adicionais()->create(['nome' => $ponto, 'preco' => 0, 'ordem' => $i + 1]);
+
+                if (!empty($dados['grupos'])) {
+                    foreach ($dados['grupos'] as $grupo) {
+                        $grupoCriado = $produto->gruposAdicionais()->create([
+                            'nome'        => $grupo['nome'],
+                            'obrigatorio' => $grupo['obrigatorio'] ?? false,
+                            'min_selecao' => $grupo['min'] ?? 0,
+                            'max_selecao' => $grupo['max'] ?? 3,
+                            'ordem'       => $grupo['ordem'] ?? 1,
+                        ]);
+
+                        foreach ($grupo['opcoes'] as $index => $opcao) {
+                            $grupoCriado->adicionais()->create([
+                                'nome'  => $opcao['nome'],
+                                'preco' => $opcao['preco'] ?? 0,
+                                'ordem' => $index + 1,
+                            ]);
+                        }
+                    }
                 }
             }
-
-            // Grupo: Adicionais
-            $grupoAdic = $produto->gruposAdicionais()->create([
-                'nome'        => 'Adicionais',
-                'obrigatorio' => false,
-                'min_selecao' => 0,
-                'max_selecao' => 5,
-                'ordem'       => 2,
-            ]);
-            $adicionais = [
-                ['nome' => 'Queijo extra',    'preco' => 2.00],
-                ['nome' => 'Bacon extra',     'preco' => 3.00],
-                ['nome' => 'Ovo frito',       'preco' => 2.00],
-                ['nome' => 'Milho',           'preco' => 1.00],
-                ['nome' => 'Batata palha',    'preco' => 1.50],
-                ['nome' => 'Cebola crispy',   'preco' => 2.00],
-            ];
-            foreach ($adicionais as $i => $a) {
-                $grupoAdic->adicionais()->create(array_merge($a, ['ordem' => $i + 1]));
-            }
         }
+    }
 
-        // Bebidas
-        if ($catBebidas) {
-            $bebidas = [
-                ['nome' => 'Refrigerante Lata',  'preco' => 5.00,  'ordem' => 1],
-                ['nome' => 'Suco Natural 300ml', 'preco' => 9.00,  'ordem' => 2],
-                ['nome' => 'Água Mineral',       'preco' => 3.00,  'ordem' => 3],
-                ['nome' => 'Milkshake 400ml',    'preco' => 14.90, 'ordem' => 4],
-                ['nome' => 'Vitamina de Frutas', 'preco' => 12.00, 'ordem' => 5],
-            ];
-            foreach ($bebidas as $b) {
-                Produto::create([
-                    'loja_id'      => $loja->id,
-                    'categoria_id' => $catBebidas->id,
-                    'nome'         => $b['nome'],
-                    'slug'         => Str::slug($b['nome']),
-                    'preco'        => $b['preco'],
-                    'ordem'        => $b['ordem'],
-                    'ativo'        => true,
-                    'disponivel'   => true,
-                ]);
-            }
-        }
+    private function identificarPerfil(string $slug): string
+    {
+        return match (true) {
+            str_contains($slug, 'pizza')  => 'pizzaria',
+            str_contains($slug, 'veggie') => 'veggie',
+            default => 'burgers',
+        };
+    }
 
-        // Porções
-        if ($catPorcoes) {
-            $porcoes = [
-                ['nome' => 'Batata Frita P',        'preco' => 16.90, 'ordem' => 1],
-                ['nome' => 'Batata Frita M',        'preco' => 22.90, 'ordem' => 2],
-                ['nome' => 'Batata Frita G',        'preco' => 28.90, 'ordem' => 3],
-                ['nome' => 'Onion Rings',           'preco' => 22.90, 'ordem' => 4],
-                ['nome' => 'Nuggets 10 peças',      'preco' => 19.90, 'ordem' => 5],
-            ];
-            foreach ($porcoes as $p) {
-                Produto::create([
-                    'loja_id'      => $loja->id,
-                    'categoria_id' => $catPorcoes->id,
-                    'nome'         => $p['nome'],
-                    'slug'         => Str::slug($p['nome']),
-                    'preco'        => $p['preco'],
-                    'ordem'        => $p['ordem'],
-                    'ativo'        => true,
-                    'disponivel'   => true,
-                    'tempo_preparo_min' => 12,
-                ]);
-            }
-        }
+    private function catalogoPorPerfil(string $perfil): array
+    {
+        return match ($perfil) {
+            'pizzaria' => $this->catalogoPizzaria(),
+            'veggie'   => $this->catalogoVeggie(),
+            default    => $this->catalogoBurgers(),
+        };
+    }
 
-        // Combos
-        if ($catCombos) {
-            Produto::create([
-                'loja_id'           => $loja->id,
-                'categoria_id'      => $catCombos->id,
-                'nome'              => 'Combo X-Burguer',
-                'slug'              => 'combo-x-burguer',
-                'descricao'         => 'X-Burguer + Batata Frita M + Refrigerante Lata. Economia de R$ 5,00!',
-                'preco'             => 34.90,
-                'preco_promocional' => 32.90,
-                'destaque'          => true,
-                'novo'              => false,
-                'ordem'             => 1,
-                'ativo'             => true,
-                'disponivel'        => true,
-                'tempo_preparo_min' => 20,
-            ]);
-        }
+    private function catalogoBurgers(): array
+    {
+        return [
+            [
+                'categoria' => 'Lanches Especiais',
+                'nome'      => 'Smash Paulista',
+                'descricao' => 'Blend 120g smash, queijo cheddar duplo, cebola caramelizada e aioli da casa.',
+                'preco'     => 29.90,
+                'imagem'    => 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=640&q=80',
+                'destaque'  => true,
+                'ordem'     => 1,
+                'grupos'    => [
+                    [
+                        'nome' => 'Ponto da carne',
+                        'obrigatorio' => true,
+                        'min' => 1,
+                        'max' => 1,
+                        'opcoes' => [
+                            ['nome' => 'Mal passado'],
+                            ['nome' => 'Ao ponto'],
+                            ['nome' => 'Bem passado'],
+                        ],
+                    ],
+                    [
+                        'nome' => 'Adicionais',
+                        'max'  => 4,
+                        'opcoes'=> [
+                            ['nome' => 'Cheddar extra', 'preco' => 3.50],
+                            ['nome' => 'Bacon crocante', 'preco' => 4.90],
+                            ['nome' => 'Picles artesanal', 'preco' => 2.50],
+                            ['nome' => 'Maionese defumada', 'preco' => 1.90],
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'categoria' => 'Lanches Especiais',
+                'nome'      => 'Brisket BBQ',
+                'descricao' => 'Brisket defumado 14h, queijo gouda, coleslaw e molho barbecue artesanal.',
+                'preco'     => 36.00,
+                'imagem'    => 'https://images.unsplash.com/photo-1508739826987-b79cd8b7da12?auto=format&fit=crop&w=640&q=80',
+                'ordem'     => 2,
+                'novo'      => true,
+            ],
+            [
+                'categoria' => 'Combos',
+                'nome'      => 'Combo Experience',
+                'descricao' => 'Escolha qualquer burger + batata artesanal + refrigerante lata.',
+                'preco'     => 48.00,
+                'promocional'=> 44.00,
+                'imagem'    => 'https://images.unsplash.com/photo-1504753793650-d4a2b783c15f?auto=format&fit=crop&w=640&q=80',
+                'destaque'  => true,
+                'grupos'    => [
+                    [
+                        'nome' => 'Escolha seu burger',
+                        'obrigatorio' => true,
+                        'min' => 1,
+                        'max' => 1,
+                        'opcoes' => [
+                            ['nome' => 'Smash Paulista'],
+                            ['nome' => 'Brisket BBQ'],
+                            ['nome' => 'Clássico X-Burger'],
+                        ],
+                    ],
+                    [
+                        'nome' => 'Bebida',
+                        'obrigatorio' => true,
+                        'min' => 1,
+                        'max' => 1,
+                        'opcoes' => [
+                            ['nome' => 'Refrigerante lata'],
+                            ['nome' => 'Suco natural +R$2', 'preco' => 2.00],
+                            ['nome' => 'Milkshake +R$8', 'preco' => 8.00],
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'categoria' => 'Porções',
+                'nome'      => 'Batata trufada',
+                'descricao' => 'Batata rústica com parmesão e óleo trufado.',
+                'preco'     => 26.90,
+                'imagem'    => 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?auto=format&fit=crop&w=640&q=80',
+                'ordem'     => 4,
+            ],
+            [
+                'categoria' => 'Bebidas',
+                'nome'      => 'Milkshake de doce de leite',
+                'preco'     => 18.90,
+                'imagem'    => 'https://images.unsplash.com/photo-1455156218388-5e61b5268181?auto=format&fit=crop&w=640&q=80',
+                'ordem'     => 5,
+            ],
+            [
+                'categoria' => 'Sobremesas',
+                'nome'      => 'Cheesecake com frutas vermelhas',
+                'preco'     => 19.50,
+                'imagem'    => 'https://images.unsplash.com/photo-1461009209120-103fed588fc1?auto=format&fit=crop&w=640&q=80',
+                'ordem'     => 6,
+            ],
+        ];
+    }
+
+    private function catalogoPizzaria(): array
+    {
+        return [
+            [
+                'categoria' => 'Pizzas Salgadas',
+                'nome'      => 'Margherita DOC',
+                'descricao' => 'Massa napolitana, molho San Marzano, fior di latte e manjericão fresco.',
+                'preco'     => 49.90,
+                'imagem'    => 'https://images.unsplash.com/photo-1473093226795-af9932fe5856?auto=format&fit=crop&w=640&q=80',
+                'destaque'  => true,
+                'grupos'    => [
+                    [
+                        'nome' => 'Tamanho', 'obrigatorio' => true, 'min' => 1, 'max' => 1,
+                        'opcoes' => [
+                            ['nome' => 'Individual (4 pedaços)'],
+                            ['nome' => 'Grande (8 pedaços)', 'preco' => 15.00],
+                        ],
+                    ],
+                    [
+                        'nome' => 'Bordas recheadas', 'max' => 1,
+                        'opcoes' => [
+                            ['nome' => 'Catupiry', 'preco' => 6.00],
+                            ['nome' => 'Cheddar', 'preco' => 6.00],
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'categoria' => 'Pizzas Doces',
+                'nome'      => 'Nutella com morangos',
+                'descricao' => 'Base crocante, creme de avelã e morangos frescos.',
+                'preco'     => 42.00,
+                'imagem'    => 'https://images.unsplash.com/photo-1523986371872-9d3ba2e2f5ab?auto=format&fit=crop&w=640&q=80',
+                'novo'      => true,
+            ],
+            [
+                'categoria' => 'Massas Artesanais',
+                'nome'      => 'Ravioli de burrata',
+                'descricao' => 'Recheio de burrata com pesto de pistache.',
+                'preco'     => 54.90,
+                'imagem'    => 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=640&q=80',
+            ],
+            [
+                'categoria' => 'Bebidas Premium',
+                'nome'      => 'Spritz artesanal',
+                'preco'     => 24.90,
+                'imagem'    => 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=640&q=80',
+            ],
+        ];
+    }
+
+    private function catalogoVeggie(): array
+    {
+        return [
+            [
+                'categoria' => 'Bowls Autorais',
+                'nome'      => 'Bowl Mediterrâneo',
+                'descricao' => 'Quinoa orgânica, homus defumado, falafel e legumes grelhados.',
+                'preco'     => 32.90,
+                'imagem'    => 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?auto=format&fit=crop&w=640&q=80',
+                'destaque'  => true,
+                'grupos'    => [
+                    [
+                        'nome' => 'Proteína vegetal',
+                        'obrigatorio' => true,
+                        'opcoes' => [
+                            ['nome' => 'Falafel'],
+                            ['nome' => 'Tofu grelhado'],
+                            ['nome' => 'Cogumelos shimeji'],
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'categoria' => 'Saladas Quentes',
+                'nome'      => 'Salada Thai',
+                'descricao' => 'Mix de folhas, manga, pepino, castanhas e molho agridoce.',
+                'preco'     => 27.50,
+                'imagem'    => 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?auto=format&fit=crop&w=640&q=80',
+            ],
+            [
+                'categoria' => 'Drinks Naturais',
+                'nome'      => 'Kombucha artesanal',
+                'preco'     => 15.90,
+                'imagem'    => 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=640&q=80',
+            ],
+            [
+                'categoria' => 'Sobremesas Veganas',
+                'nome'      => 'Mousse de cacau com castanhas',
+                'preco'     => 18.00,
+                'imagem'    => 'https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=640&q=80',
+            ],
+        ];
     }
 }

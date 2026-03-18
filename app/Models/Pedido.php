@@ -21,7 +21,7 @@ class Pedido extends Model
         'endereco_id', 'endereco_cep', 'endereco_logradouro', 'endereco_numero',
         'endereco_complemento', 'endereco_bairro', 'endereco_cidade', 'endereco_estado',
         'endereco_latitude', 'endereco_longitude', 'subtotal', 'taxa_entrega',
-        'desconto', 'total', 'observacoes', 'cupom_codigo', 'tempo_estimado_min',
+        'desconto', 'gorjeta_entregador', 'total', 'observacoes', 'cupom_codigo', 'tempo_estimado_min',
         'confirmado_em', 'entregue_em', 'cancelado_em', 'motivo_cancelamento',
         'entregador_id', 'link_rastreamento', 'historico_status',
     ];
@@ -30,6 +30,7 @@ class Pedido extends Model
         'subtotal'            => 'decimal:2',
         'taxa_entrega'        => 'decimal:2',
         'desconto'            => 'decimal:2',
+        'gorjeta_entregador'  => 'decimal:2',
         'total'               => 'decimal:2',
         'endereco_latitude'   => 'decimal:8',
         'endereco_longitude'  => 'decimal:8',

@@ -56,6 +56,7 @@ class CheckoutController extends Controller
             'carrinho.*.quantidade' => 'required|integer|min:1',
             'tipo_entrega'          => 'required|in:entrega,retirada',
             'metodo_pagamento'      => 'required|string',
+            'gorjeta'               => 'nullable|numeric|min:0|max:500',
             'endereco.cep'          => 'required_if:tipo_entrega,entrega',
             'endereco.logradouro'   => 'required_if:tipo_entrega,entrega',
             'endereco.numero'       => 'required_if:tipo_entrega,entrega',

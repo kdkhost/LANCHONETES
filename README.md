@@ -357,7 +357,21 @@ chmod -R 775 storage/app/public
 
 ---
 
-## 📞 Suporte
+## �️ Landing e Demonstrações (Atualizado em 18/03/2026 01:55)
+
+- **Landing comercial**: `https://seudominio.com.br/apresentacao`
+  - Estrutura: hero, benefícios, como funciona, planos, cases, lojas demo, avaliações, FAQ e contato.
+  - Botão flutuante de suporte abre `https://wa.me/5521981325441`.
+  - Formulário envia e-mails para `contato@kdkhost.com.br`.
+- **Lojas demo**: após `php artisan migrate --seed`, são criadas 3 operações (hambúrgueres, pizzaria, veggie) com cardápios completos.
+- **Acesso rápido**:
+  - Início do PWA: `/`
+  - Lojas demo listadas em: `/lojas`
+  - Apresentação corporativa: `/apresentacao`
+
+---
+
+## �📞 Suporte
 
 Para dúvidas e suporte técnico, consulte a documentação:
 - [Laravel 12 Docs](https://laravel.com/docs/12.x)

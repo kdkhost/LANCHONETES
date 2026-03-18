@@ -42,11 +42,58 @@
 </head>
 <body class="pwa-body" data-loja-id="{{ $lojaAtual?->id ?? '' }}" data-loja-slug="{{ $lojaAtual?->slug ?? '' }}">
 
+    <!-- Navegação Desktop -->
+    <header class="site-navbar desktop-only">
+        <div class="site-navbar__brand">
+            <a href="{{ url('/') }}" class="site-navbar__logo">
+                @if(isset($lojaAtual) && $lojaAtual->logo)
+                    <img src="{{ $lojaAtual->logo_url }}" alt="{{ $lojaAtual->nome }}">
+                @else
+                    <span>{{ $lojaAtual->nome ?? config('app.name') }}</span>
+                @endif
+            </a>
+            <div class="site-navbar__info">
+                <strong>{{ $lojaAtual->nome ?? config('app.name') }}</strong>
+                <small>{{ $lojaAtual->descricao ?? 'Experiência completa de delivery online' }}</small>
+            </div>
+        </div>
+
+        <nav class="site-navbar__links">
+            <a href="{{ isset($lojaAtual) ? route('cliente.loja', $lojaAtual->slug) : url('/') }}" class="{{ request()->routeIs('cliente.loja') ? 'active' : '' }}">Início</a>
+            <a href="{{ route('cliente.lojas') }}" class="{{ request()->routeIs('cliente.lojas') ? 'active' : '' }}">Restaurantes</a>
+            <a href="{{ route('cliente.buscar') }}" class="{{ request()->routeIs('cliente.buscar') ? 'active' : '' }}">Buscar</a>
+            <a href="{{ route('marketing.landing') }}" target="_blank" rel="noopener">Apresentação</a>
+            @auth
+            <a href="{{ route('cliente.pedidos.index') }}">Pedidos</a>
+            @endauth
+        </nav>
+
+        <div class="site-navbar__actions">
+            @auth
+                <div class="site-navbar__user">
+                    <img src="{{ Auth::user()->foto_perfil_url }}" alt="{{ Auth::user()->nome }}">
+                    <div>
+                        <span>{{ Auth::user()->nome_abreviado }}</span>
+                        <small>{{ Auth::user()->email }}</small>
+                    </div>
+                </div>
+                <a href="{{ route('cliente.checkout') }}" class="btn btn-primario">Meu carrinho</a>
+                <form action="{{ route('logout') }}" method="POST">
+                    @csrf
+                    <button type="submit" class="btn btn-outline">Sair</button>
+                </form>
+            @else
+                <a href="{{ route('login') }}" class="btn btn-outline">Entrar</a>
+                <a href="{{ route('registro') }}" class="btn btn-primario">Criar conta</a>
+            @endauth
+        </div>
+    </header>
+
     <!-- Overlay do Sidebar -->
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="fecharSidebar()"></div>
+    <div class="sidebar-overlay mobile-only" id="sidebarOverlay" onclick="fecharSidebar()"></div>
 
     <!-- Sidebar Esquerda -->
-    <aside class="sidebar sidebar-left" id="sidebarLeft">
+    <aside class="sidebar sidebar-left mobile-only" id="sidebarLeft">
         <div class="sidebar-header">
             <div class="sidebar-user">
                 @auth
@@ -76,6 +123,9 @@
             @endif
             <a href="{{ route('cliente.lojas') }}" class="sidebar-link">
                 <i class="bi bi-shop"></i> Restaurantes
+            </a>
+            <a href="{{ route('marketing.landing') }}" target="_blank" class="sidebar-link">
+                <i class="bi bi-megaphone"></i> Apresentação
             </a>
             @auth
             <a href="{{ route('cliente.pedidos.index') }}" class="sidebar-link">
@@ -125,7 +175,7 @@
     </aside>
 
     <!-- Header Principal -->
-    <header class="pwa-header" id="pwaHeader">
+    <header class="pwa-header mobile-only" id="pwaHeader">
         <button class="header-btn" onclick="abrirSidebar()" aria-label="Menu">
             <i class="bi bi-list fs-4"></i>
         </button>
@@ -152,7 +202,7 @@
     </header>
 
     <!-- Conteúdo Principal -->
-    <main class="pwa-main" id="pwaMain">
+    <main class="pwa-main">
         @if(session('sucesso'))
         <div class="alerta alerta-sucesso animate-slide-down" id="alertaSucesso">
             <i class="bi bi-check-circle"></i> {{ session('sucesso') }}
@@ -173,7 +223,7 @@
     </main>
 
     <!-- Footer Navigation (Android-like) -->
-    <nav class="footer-nav" id="footerNav">
+    <nav class="footer-nav mobile-only" id="footerNav">
         <a href="{{ isset($lojaAtual) ? route('cliente.loja', $lojaAtual->slug) : route('cliente.home') }}"
            class="footer-nav-item {{ request()->routeIs('cliente.loja', 'cliente.home') ? 'active' : '' }}">
             <i class="bi bi-house-fill"></i>
@@ -224,8 +274,8 @@
 
     <!-- Painel do Carrinho (slide bottom) -->
     @auth
-    <div class="carrinho-overlay" id="carrinhoOverlay" onclick="fecharCarrinho()"></div>
-    <div class="carrinho-panel" id="carrinhoPanel">
+    <div class="carrinho-overlay mobile-only" id="carrinhoOverlay" onclick="fecharCarrinho()"></div>
+    <div class="carrinho-panel mobile-only" id="carrinhoPanel">
         <div class="carrinho-header">
             <h6 class="m-0"><i class="bi bi-bag"></i> Meu Carrinho</h6>
             <button onclick="fecharCarrinho()" class="btn-fechar"><i class="bi bi-x-lg"></i></button>
@@ -250,6 +300,13 @@
 
     <!-- Toast de notificação -->
     <div class="toast-container" id="toastContainer"></div>
+
+    <div class="support-fab">
+        <a href="https://wa.me/5521981325441" target="_blank" rel="noopener">
+            <i class="bi bi-whatsapp"></i>
+            <span>Precisa de suporte?</span>
+        </a>
+    </div>
 
     {{-- ═══════════════════════════════════════════════════════════
          POP-UP DE SAÍDA (Exit Intent) — configurável por lojista

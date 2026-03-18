@@ -17,6 +17,7 @@ use App\Http\Controllers\NotificacaoController;
 use App\Http\Controllers\LgpdController;
 use App\Http\Controllers\Admin\CozinhaController;
 use App\Http\Controllers\Admin\NfeAdminController;
+use App\Http\Controllers\MarketingController;
 
 // ─── Autenticação ────────────────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
@@ -226,6 +227,11 @@ Route::middleware('auth')->group(function () {
 Route::get('/termos-de-uso',       [LgpdController::class, 'termos'])->name('lgpd.termos');
 Route::get('/politica-privacidade',[LgpdController::class, 'politica'])->name('lgpd.politica');
 Route::post('/lgpd/aceitar',       [LgpdController::class, 'aceitar'])->name('lgpd.aceitar');
+
+// ─── Landing institucional / página comercial ─────────────────────────────────
+Route::get('/apresentacao', [MarketingController::class, 'landing'])->name('marketing.landing');
+Route::post('/apresentacao/contato', [MarketingController::class, 'contato'])->name('marketing.contato');
+Route::redirect('/vendas', '/apresentacao');
 
 // ─── Loja pública (homepage cliente) ─────────────────────────────────────────
 Route::get('/',                         [HomeController::class, 'index'])->name('cliente.home');

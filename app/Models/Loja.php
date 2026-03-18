@@ -334,6 +334,10 @@ class Loja extends Model
 
     public function getLogoUrlAttribute(): string
     {
+        if ($this->logo && Str::startsWith($this->logo, ['http://', 'https://'])) {
+            return $this->logo;
+        }
+
         return $this->logo
             ? asset('storage/' . $this->logo)
             : asset('img/loja-default.png');
@@ -341,6 +345,10 @@ class Loja extends Model
 
     public function getBannerUrlAttribute(): string
     {
+        if ($this->banner && Str::startsWith($this->banner, ['http://', 'https://'])) {
+            return $this->banner;
+        }
+
         return $this->banner
             ? asset('storage/' . $this->banner)
             : asset('img/banner-default.jpg');

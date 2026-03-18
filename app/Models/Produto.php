@@ -67,6 +67,10 @@ class Produto extends Model
 
     public function getImagemUrlAttribute(): string
     {
+        if ($this->imagem_principal && Str::startsWith($this->imagem_principal, ['http://', 'https://'])) {
+            return $this->imagem_principal;
+        }
+
         return $this->imagem_principal
             ? asset('storage/' . $this->imagem_principal)
             : asset('img/produto-default.png');
