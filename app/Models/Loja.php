@@ -259,10 +259,21 @@ class Loja extends Model
         if (!$chave || !isset($horarios[$chave])) return true;
 
         $h = $horarios[$chave];
+        if (!is_array($h)) {
+            return (bool) $this->ativo;
+        }
+
         if (empty($h['ativo'])) return false;
 
+        $abertura  = $h['abertura'] ?? null;
+        $fechamento = $h['fechamento'] ?? null;
+
+        if (!$abertura || !$fechamento) {
+            return (bool) $this->ativo;
+        }
+
         $agora = now()->format('H:i');
-        return $agora >= $h['abertura'] && $agora <= $h['fechamento'];
+        return $agora >= $abertura && $agora <= $fechamento;
     }
 
     public function verificarHorarioAutomatico(): bool
