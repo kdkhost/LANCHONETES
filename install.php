@@ -1,5 +1,45 @@
 <?php
 // Instalador Ultra-Simples
+
+$lockFile = __DIR__.'/storage/install.lock';
+$envFile  = __DIR__.'/.env';
+
+function appAlreadyInstalled(string $envFile, string $lockFile): bool
+{
+    if (file_exists($lockFile)) {
+        return true;
+    }
+
+    if (!file_exists($envFile)) {
+        return false;
+    }
+
+    $envContent = file_get_contents($envFile);
+    if ($envContent === false) {
+        return false;
+    }
+
+    if (preg_match('/^APP_KEY\s*=\s*(.+)$/m', $envContent, $matches)) {
+        return trim($matches[1]) !== '';
+    }
+
+    return false;
+}
+
+$alreadyInstalled = appAlreadyInstalled($envFile, $lockFile);
+
+if ($alreadyInstalled && !isset($_GET['force'])) {
+    http_response_code(403);
+    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Instalador bloqueado</title>';
+    echo '<style>body{font-family:Arial,Helvetica,sans-serif;background:#f3f4f6;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}';
+    echo '.card{background:#fff;padding:40px;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.1);max-width:480px;text-align:center;}';
+    echo 'h1{color:#ff6b35;margin-bottom:10px;}p{color:#555;line-height:1.5;}a{color:#ff6b35;text-decoration:none;font-weight:bold;}</style>';
+    echo '</head><body><div class="card"><h1>🚫 Instalador desabilitado</h1>';
+    echo '<p>O sistema já foi instalado e, por segurança, o instalador foi bloqueado.<br>Se precisar reinstalar, renomeie este arquivo ou remova <code>storage/install.lock</code>.</p>';
+    echo '<p><a href="/">← Voltar para o site</a></p></div></body></html>';
+    exit;
+}
+
 if ($_POST['action'] ?? false) {
     header('Content-Type: application/json');
     
@@ -84,6 +124,7 @@ if ($_POST['action'] ?? false) {
                 $steps[] = ['msg' => 'Usuário admin criado', 'ok' => true];
             }
             
+            @file_put_contents($lockFile, now()->toDateTimeString() ?? date('c'));
             echo json_encode(['success' => true, 'steps' => $steps]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'error' => $e->getMessage()]);
